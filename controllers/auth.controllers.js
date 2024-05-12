@@ -49,6 +49,7 @@ module.exports = {
                 message: 'Registered are successfull',
                 data: { user }
             })
+
         } catch (error) {
             next(error);
         }

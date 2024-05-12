@@ -15,21 +15,22 @@ router.post("/login", async (req, res) => {
     const { email, password } = req.body;
     try {
         const response = await axios.post(
-            `http://${process.env.URL_ENDPOINT}/api/v1/auth/login`,
+            `${process.env.URL_ENDPOINT}/api/v1/auth/login`,
             {
                 email,
                 password
             },
         );
 
-        if (response.data.message === "success") {
+        if (response.data.status === true) {
             res.redirect("/dashboard");
         } else {
             res.render('login', {
-                error: `${response.data.message}`
+                error: `${response.data.status}`
             });
         }
     } catch (error) {
+        console.log(error);
         res.render("login", {
             error: "An error occurred during login. Please try again later.",
         });
@@ -41,16 +42,16 @@ router.post('/register', async (req, res) => {
 
     try {
         const response = await axios.post(
-            `http://${process.env.URL_ENDPOINT}/api/v1/auth/register`,
+            `${process.env.URL_ENDPOINT}/api/v1/auth/register`,
             {
                 name, email, password
             }
         );
 
-        if (response.data.message === "success") {
+        if (response.data.status === true) {
             res.redirect('/login');
         } else {
-            res.render('register', { error: `${response.data.message}` })
+            res.render('register', { error: `${response.data.status}` })
         }
 
     } catch (error) {
