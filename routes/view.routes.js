@@ -10,10 +10,34 @@ router.get("/dashboard", (req, res) => { res.render("dashboard"); });
 router.get("/logout", async (req, res) => { res.render("index"); });
 router.get("/forgotpassword", (req, res) => { res.render("forgotpassword"); });
 router.get("/resetpassword/:token", (req, res) => {
-    const token = req.params;
+    const token = req.params.token;
     res.render("resetpassword", { token });
 });
 
+router.post('/resetpassword/:token', async (req, res) => {
+    const { password } = req.body;
+    const token = req.params.token;
+
+    try {
+        const response = await axios.post(
+            `${process.env.URL_ENDPOINT}/api/v1/auth/resetpassword/${token}`,
+            { password }
+        );
+
+
+        if (response.data.status === true) {
+            res.render('resetpassword', { success: 'Password has been reset' });
+        } else {
+            res.render('resetpassword', { error: `${response.data.message}`, token });
+        }
+    } catch (error) {
+        console.error("Error during reset password:", error);
+        res.render("resetpassword", {
+            error: "An error occurred. Please try again later.",
+            token
+        });
+    }
+});
 
 // Process EJS forms
 router.post("/login", async (req, res) => {
@@ -82,30 +106,5 @@ router.post('/forgotpassword', async (req, res) => {
     }
 });
 
-
-router.post('/resetpassword/', async (req, res) => {
-    const { password } = req.body;
-    const token = req.params.token;
-
-    try {
-        const response = await axios.post(
-            `${process.env.URL_ENDPOINT}/api/v1/auth/resetpassword/${token}`,
-            { password }
-        );
-
-
-        if (response.data.status === true) {
-            res.render('resetpassword', { success: 'Password has been reset' });
-        } else {
-            res.render('resetpassword', { error: `${response.data.message}`, token });
-        }
-    } catch (error) {
-        console.error("Error during reset password:", error);
-        res.render("resetpassword", {
-            error: "An error occurred. Please try again later.",
-            token
-        });
-    }
-});
 
 module.exports = router;

@@ -133,11 +133,9 @@ module.exports = {
                     data: null
                 });
             }
-            const token = jwt.sign({ id: user.id }, JWT_SECRET_KEY);
-            await prisma.user.update({ where: { email }, data: { passwordReset: token } });
+            const token = jwt.sign({ email: user.email }, JWT_SECRET_KEY);
 
             const resetPasswordUrl = `${URL_ENDPOINT}/api/v1/auth/resetpassword/${token}`;
-
             const subject = 'Password Reset Request';
             const html = `<p><b>Please Verify with link bellow!</b> </p>
             <p><a href='${resetPasswordUrl}'>Click Here For Reset Password!</a></p>`
@@ -147,7 +145,7 @@ module.exports = {
             // Setelah pengiriman email berhasil
             return res.status(200).json({
                 status: true,
-                message: 'success'
+                message: 'success kirim email'
             })
         } catch (error) {
             next(error);
@@ -158,27 +156,30 @@ module.exports = {
     resetPassword: async (req, res, next) => {
         try {
             const token = req.params.token;
-            const password = req.body.password;
+            const { password } = req.body;
+            console.log('Password', password);
 
-            const user = await prisma.user.findFirst({ where: { passwordReset: token } });
+            let hashPassword = await bcrypt.hash(password, 10);
+            jwt.verify(token, JWT_SECRET_KEY, async (err, decoded) => {
+                if (err) {
+                    return res.status(403).json({
+                        status: false,
+                        message: 'invalid token'
+                    })
+                }
+            });
 
-            if (!user) {
-                return res.status(404).json({
-                    status: false,
-                    message: 'User not found or invalid token',
-                    data: null
-                });
-            }
-            const hashedPassword = await bcrypt.hash(password, 10);
-            await prisma.user.update({
-                where: { id: user.id },
-                data: { password: hashedPassword, passwordReset: null }
+            const updateUser = await prisma.user.update({
+                where: { email: decoded.email },
+                data: { password: hashPassword },
             });
 
             return res.status(200).json({
                 status: true,
-                message: 'password has ben reset'
+                message: 'password has been reset',
+                data: updateUser
             });
+
         } catch (error) {
             next(error);
         }
