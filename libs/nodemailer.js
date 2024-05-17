@@ -35,9 +35,10 @@ module.exports = {
         }
     },
 
-    getHTML: (fileName, data) => {
+    getHTML: (filename, data) => {
         return new Promise((resolve, reject) => {
-            const path = `${__dirname}/../views/${fileName}`;
+            const path = `${__dirname}/../views/templates/${filename}`;
+
             ejs.renderFile(path, data, (err, data) => {
                 if (err) {
                     return reject(err);
@@ -45,5 +46,5 @@ module.exports = {
                 return resolve(data);
             });
         });
-    }
+    },
 };

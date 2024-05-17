@@ -5,7 +5,6 @@ const bcrypt = require("bcrypt")
 const jwt = require('jsonwebtoken');
 const nodemailer = require('../libs/nodemailer');
 const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
-const URL_ENDPOINT = process.env.URL_ENDPOINT;
 
 module.exports = {
     // function register
@@ -71,7 +70,7 @@ module.exports = {
             let user = await prisma.user.findFirst({ where: { email } })
 
             if (!user) {
-                req.flash("error", "Invalid email or password");
+                req.flash("error", "Email not found!");
                 res.status(400);
                 return res.redirect("/login");
             };
@@ -115,26 +114,25 @@ module.exports = {
             const user = await prisma.user.findFirst({ where: { email } });
 
             if (!user) {
-                return res.status(404).json({
-                    status: false,
-                    message: 'Email not found',
-                    data: null
-                });
+                req.flash("error", "Email not found!");
+                res.status(404);
+                res.redirect("/forgotpassword");
             }
-            const token = jwt.sign({ email: user.email }, JWT_SECRET_KEY);
-            console.log('Token:', token);
-            const resetPasswordUrl = `${URL_ENDPOINT}/api/v1/auth/resetpassword/${token}`;
-            const subject = 'Password Reset Request';
-            const html = `<p><b>Please Verify with link bellow!</b> </p>
-            <p><a href='${resetPasswordUrl}'>Click Here For Reset Password!</a></p>`
 
-            // Send email
-            await nodemailer.sendMail(user.email, subject, html);
+            const token = jwt.sign({ email: user.email }, JWT_SECRET_KEY);
+
+            const html = await nodemailer.getHTML("link-reset.ejs", {
+                name: user.name,
+                url: `${req.protocol}://${req.get('host')}/resetpassword/${token}`,
+            });
+
+            await nodemailer.sendMail(user.email, "Password Reset Request", html);
+
             // Setelah pengiriman email berhasil
-            return res.status(200).json({
-                status: true,
-                message: 'success kirim email'
-            })
+            req.flash("success", "Successfull sent email. Please check your email!");
+            res.status(200);
+            res.redirect("/forgotpassword");
+
         } catch (error) {
             next(error);
         }
@@ -151,23 +149,20 @@ module.exports = {
             // Verify the token
             jwt.verify(token, JWT_SECRET_KEY, async (err, decoded) => {
                 if (err) {
-                    return res.status(403).json({
-                        status: false,
-                        message: 'invalid token'
-                    });
+                    req.flash("error", "invalid or expired token!");
+                    res.status(403);
+                    res.redirect("/forgotpassword");
                 }
 
                 // Update password for the user
-                const updateUser = await prisma.user.update({
+                await prisma.user.update({
                     where: { email: decoded.email },
                     data: { password: hashPassword },
                 });
 
-                return res.status(200).json({
-                    status: true,
-                    message: 'password has been reset',
-                    data: updateUser
-                });
+                req.flash("success", "Password successfull has been reset");
+                res.status(200);
+                res.redirect("/login");
             });
         } catch (error) {
             next(error);
