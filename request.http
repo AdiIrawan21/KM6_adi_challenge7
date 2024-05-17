@@ -1,0 +1,13 @@
+### login
+POST http://localhost:3000/api/v1/auth/login
+Content-Type: application/json
+
+{
+    "email":"adiirwn10@gmail.com",
+    "password":"adi123"
+}
+
+### whoami
+GET http://localhost:3000/api/v1/auth/authenticate
+# Authorization: Bearer tokentoken
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwibmFtZSI6ImFkaSIsImVtYWlsIjoiYWRpaXJ3bjEwQGdtYWlsLmNvbSIsImNyZWF0ZWRBdCI6IjIwMjQtMDUtMDlUMjM6MDc6NTEuMjQxWiIsInVwZGF0ZWRBdCI6IjIwMjQtMDUtMDlUMjM6MDc6NTEuMjQxWiIsImlhdCI6MTcxNTgxODUyN30.mWWUTCAX61q3HsXbg53NzZp_ggGCI3RbvG-5ZvueKoI

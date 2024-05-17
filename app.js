@@ -5,6 +5,7 @@ const logger = require('morgan');
 const app = express();
 const cors = require("cors");
 const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
 const path = require('path');
 const Sentry = require('./libs/sentry');
 const http = require('http');
@@ -20,6 +21,8 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -38,6 +41,21 @@ app.set('views', path.join(__dirname, 'views'));
 // handle socket.io (server)
 const { Server } = require("socket.io");
 const io = new Server(server);
+io.on('connect', (socket) => {
+    console.log(`User connected: ${socket.id}`);
+
+    socket.on('registrationSuccess', (data) => {
+        io.to(socket.id).emit('notification', { type: 'success', message: 'Registration successful!' });
+    });
+
+    socket.on('loginSuccess', (data) => {
+        io.to(socket.id).emit('notification', { type: 'success', message: 'Login successful!' });
+    });
+
+    socket.on('disconnect', () => {
+        console.log(`User disconnected: ${socket.id}`);
+    });
+});
 
 // The error handler must be registered before any other error middleware and after all controllers
 app.use(Sentry.Handlers.errorHandler());
