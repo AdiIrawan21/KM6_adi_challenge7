@@ -58,22 +58,27 @@
 <body>
     <h1 class="text-center">Login</h1>
     <div class="form-container">
-        <% if (typeof error !=='undefined' ) { %>
-            <p style="color: red;">
-                <%= error %>
-            </p>
+        <% if(messages.error){ %>
+            <div id="error-message" class="alert alert-danger">
+                <%= messages.error %>
+            </div>
             <% } %>
-                <form action="/login" method="post" autocomplete="off">
-                    <div class="form-group">
-                        <label for="email">Email:</label>
-                        <input type="email" id="email" name="email" required>
+                <% if (messages.success) { %>
+                    <div id="success-message" class="alert alert-success">
+                        <%= messages.success %>
                     </div>
-                    <div class="form-group">
-                        <label for="password">Password:</label>
-                        <input type="password" id="password" name="password" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-block">Login</button>
-                </form>
+                    <% } %>
+                        <form action="/api/v1/auth/login" method="post" autocomplete="off">
+                            <div class="form-group">
+                                <label for="email">Email:</label>
+                                <input type="email" id="email" name="email" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="password">Password:</label>
+                                <input type="password" id="password" name="password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block">Login</button>
+                        </form>
     </div>
 
     <div align="center">
@@ -85,6 +90,26 @@
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const errorMessage = document.getElementById('error-message');
+            const successMessage = document.getElementById('success-message');
+
+            if (errorMessage) {
+                setTimeout(function () {
+                    errorMessage.style.display = 'none';
+                }, 3000);
+            }
+
+            if (successMessage) {
+                setTimeout(function () {
+                    successMessage.style.display = 'none';
+                }, 3000);
+            }
+        });
+    </script>
 </body>
+
 
 </html>

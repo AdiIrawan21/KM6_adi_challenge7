@@ -7,6 +7,6 @@ router.post('/auth/register', authController.register);
 router.post('/auth/login', authController.login);
 router.get('/auth/authenticate', restricted, authController.authenticate);
 router.post('/auth/forgotpassword', authController.forgotPassword);
-router.get('/auth/resetpassword/:token', authController.resetPassword);
+router.post('/auth/resetpassword/:token', authController.resetPassword);
 
 module.exports = router;

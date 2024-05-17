@@ -11,14 +11,12 @@ module.exports = {
     // function register
     register: async (req, res, next) => {
         try {
-            let { name, email, password, passwordReset } = req.body;
+            let { name, email, password } = req.body;
 
             if (!name || !email || !password) {
-                return res.status(400).json({
-                    status: false,
-                    message: 'name, email, password are required',
-                    data: null
-                });
+                req.flash("error", "Missing field");
+                res.status(400);
+                return res.redirect("/register");
             };
 
             let exist = await prisma.user.findFirst({
@@ -28,11 +26,9 @@ module.exports = {
             });
 
             if (exist) {
-                return res.status(400).json({
-                    status: false,
-                    message: 'email has already been used!',
-                    data: null
-                });
+                req.flash("error", "email has been already!")
+                res.status(400)
+                return res.redirect("/register")
             };
 
             // enkripsi password
@@ -47,11 +43,14 @@ module.exports = {
 
             delete user.password
 
-            return res.status(201).json({
-                status: true,
-                message: 'Registered are successfull',
-                data: { user }
-            })
+            req.flash("success", "Registered are successfull")
+            res.status(400)
+            return res.redirect("/login");
+            // return res.status(201).json({
+            //     status: true,
+            //     message: 'Registered are successfull',
+            //     data: { user }
+            // })
 
         } catch (error) {
             next(error);
@@ -64,41 +63,30 @@ module.exports = {
             let { email, password } = req.body;
 
             if (!email || !password) {
-                return res.status(400).json({
-                    status: false,
-                    message: 'email or password are required',
-                    data: null
-                });
+                req.flash("error", "Missing field");
+                res.status(400);
+                return res.redirect("/login");
             };
 
             let user = await prisma.user.findFirst({ where: { email } })
 
             if (!user) {
-                return res.status(401).json({
-                    status: false,
-                    message: 'users not found',
-                    data: null
-                });
+                req.flash("error", "Invalid email or password");
+                res.status(400);
+                return res.redirect("/login");
             };
 
             let isPasswordCorrect = await bcrypt.compare(password, user.password);
 
             if (!isPasswordCorrect) {
-                return res.status(400).json({
-                    status: false,
-                    message: 'invalid email or password',
-                    data: null
-                });
+                req.flash("error", "Invalid email or password");
+                return res.redirect("/login");
             };
             delete user.password
 
             let token = jwt.sign(user, JWT_SECRET_KEY)
             console.log('token: ', token);
-            return res.status(200).json({
-                status: true,
-                message: 'User logged in success',
-                data: { ...user, token }
-            })
+            return res.redirect("/dashboard");
         } catch (error) {
             next(error);
         }
@@ -134,7 +122,7 @@ module.exports = {
                 });
             }
             const token = jwt.sign({ email: user.email }, JWT_SECRET_KEY);
-
+            console.log('Token:', token);
             const resetPasswordUrl = `${URL_ENDPOINT}/api/v1/auth/resetpassword/${token}`;
             const subject = 'Password Reset Request';
             const html = `<p><b>Please Verify with link bellow!</b> </p>
@@ -155,33 +143,35 @@ module.exports = {
     // function reset password
     resetPassword: async (req, res, next) => {
         try {
-            const token = req.params.token;
+            const { token } = req.params;
             const { password } = req.body;
-            console.log('Password', password);
 
             let hashPassword = await bcrypt.hash(password, 10);
+
+            // Verify the token
             jwt.verify(token, JWT_SECRET_KEY, async (err, decoded) => {
                 if (err) {
                     return res.status(403).json({
                         status: false,
                         message: 'invalid token'
-                    })
+                    });
                 }
-            });
 
-            const updateUser = await prisma.user.update({
-                where: { email: decoded.email },
-                data: { password: hashPassword },
-            });
+                // Update password for the user
+                const updateUser = await prisma.user.update({
+                    where: { email: decoded.email },
+                    data: { password: hashPassword },
+                });
 
-            return res.status(200).json({
-                status: true,
-                message: 'password has been reset',
-                data: updateUser
+                return res.status(200).json({
+                    status: true,
+                    message: 'password has been reset',
+                    data: updateUser
+                });
             });
-
         } catch (error) {
             next(error);
         }
     }
+
 };
