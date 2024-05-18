@@ -9,14 +9,19 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const Sentry = require('./libs/sentry');
 const http = require('http');
-const server = http.createServer(app);
+
 const session = require('express-session');
 const flash = require('express-flash');
+
+// handle socket.io (server)
+const { Server } = require("socket.io");
+const server = http.createServer(app);
+const io = new Server(server);
+
 // The request handler must be the first middleware on the app
 app.use(Sentry.Handlers.requestHandler());
 // TracingHandler creates a trace for every incoming request
 app.use(Sentry.Handlers.tracingHandler());
-
 
 app.use(logger('dev'));
 app.use(express.json());
@@ -35,6 +40,11 @@ app.use(session({
 app.use(flash());
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use((req, res, next) => {
+    req.io = io;
+    next();
+});
+
 // handle routes backend
 const authRoutes = require('./routes/auth.routes');
 app.use('/api/v1', authRoutes);
@@ -46,9 +56,13 @@ app.use('/', viewRoutes);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// handle socket.io (server)
-const { Server } = require("socket.io");
-const io = new Server(server);
+io.on("connection", (socket) => {
+    console.log("a user connected");
+
+    socket.on("disconnect", () => {
+        console.log("user disconnected");
+    });
+});
 
 // The error handler must be registered before any other error middleware and after all controllers
 app.use(Sentry.Handlers.errorHandler());

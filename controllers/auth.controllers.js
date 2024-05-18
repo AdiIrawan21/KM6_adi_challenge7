@@ -32,6 +32,7 @@ module.exports = {
 
             // enkripsi password
             let encryptedPassword = await bcrypt.hash(password, 10);
+
             let user = await prisma.user.create({
                 data: {
                     name,
@@ -39,17 +40,22 @@ module.exports = {
                     password: encryptedPassword
                 }
             });
-
             delete user.password
+
+            const notification = await prisma.notification.create({
+                data: {
+                    title: "Registered account",
+                    message:
+                        "Account created successfull!",
+                    createdDate: new Date().toISOString(),
+                    user: { connect: { id: user.id } },
+                },
+            });
+            req.io.emit(`user-${user.id}`, notification);
 
             req.flash("success", "Registered are successfull")
             res.status(400)
             return res.redirect("/login");
-            // return res.status(201).json({
-            //     status: true,
-            //     message: 'Registered are successfull',
-            //     data: { user }
-            // })
 
         } catch (error) {
             next(error);
@@ -155,10 +161,22 @@ module.exports = {
                 }
 
                 // Update password for the user
-                await prisma.user.update({
+                let updateUser = await prisma.user.update({
                     where: { email: decoded.email },
                     data: { password: hashPassword },
                 });
+
+                const notification = await prisma.notification.create({
+                    data: {
+                        title: "Password Updated!",
+                        message:
+                            "Your password has been updated successfully!",
+                        createdDate: new Date().toISOString(),
+                        user: { connect: { id: updateUser.id } },
+                    },
+                });
+
+                req.io.emit(`user-${updateUser.id}`, notification);
 
                 req.flash("success", "Password successfull has been reset");
                 res.status(200);
@@ -167,6 +185,22 @@ module.exports = {
         } catch (error) {
             next(error);
         }
-    }
+    },
+
+    // Tampilkan notifikasi ke pengguna
+    notifPages: async (req, res, next) => {
+        try {
+            const user_id = Number(req.params.id);
+            console.log('userid:', user_id)
+            const notifications = await prisma.notification.findMany({
+                where: { user_id: user_id },
+                orderBy: { createdDate: 'desc' },
+            });
+
+            res.render('notification', { notifications, user_id });
+        } catch (error) {
+            next(error);
+        }
+    },
 
 };
